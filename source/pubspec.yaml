@@ -1,0 +1,44 @@
+name: learningdart
+description: A new Flutter project.
+
+
+publish_to: 'none' 
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.17.3 <3.0.0"
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+
+  
+  cupertino_icons: ^1.0.2
+  flutter_switch: ^0.3.2
+  toggle_switch: ^2.0.1
+  flutter_text_box: ^0.0.1
+  fk_toggle: ^0.1.4
+  toggle_bar_button: ^1.0.0
+  flutter_masked_text: ^0.7.0
+  syncfusion_flutter_sliders: ^20.2.36
+  easy_sidemenu: ^0.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+ 
+  flutter_lints: ^2.0.0
+
+
+
+
+flutter:
+
+  
+  uses-material-design: true
+
+  
