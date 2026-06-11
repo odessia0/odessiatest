@@ -1,6 +1,14 @@
 -- ServerScriptService/SpeedManager.lua
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- Setup RemoteEvent for trail color changes
+local changeTrailColorEvent = Instance.new("RemoteEvent")
+changeTrailColorEvent.Name = "ChangeTrailColor"
+changeTrailColorEvent.Parent = ReplicatedStorage
+
+local playerTrailColors = {} -- Store preferred colors
 
 local function setupPlayer(player)
 	-- Create leaderstats
@@ -53,12 +61,17 @@ local function setupPlayer(player)
 		-- Sync initial speed
 		humanoid.WalkSpeed = 16 + speedStat.Value
 
+		-- Set preferred color if exists
+		if playerTrailColors[player.UserId] then
+			trail.Color = playerTrailColors[player.UserId]
+		end
+
 		-- Update WalkSpeed when Speed stat changes
 		local connection
 		connection = speedStat.Changed:Connect(function(newValue)
 			if humanoid and humanoid.Parent then
 				humanoid.WalkSpeed = 16 + newValue
-				trail.Lifetime = 0.5 + (newValue / 1000) -- Trail gets longer as player gets faster
+				trail.Lifetime = 0.5 + (newValue / 1000)
 			else
 				connection:Disconnect()
 			end
@@ -91,3 +104,22 @@ end
 
 -- Handle new players
 Players.PlayerAdded:Connect(setupPlayer)
+
+-- Handle trail color change requests
+changeTrailColorEvent.OnServerEvent:Connect(function(player, color)
+	if typeof(color) == "Color3" then
+		playerTrailColors[player.UserId] = ColorSequence.new(color)
+
+		-- Update current trail if character exists
+		local character = player.Character
+		if character then
+			local rootPart = character:FindFirstChild("HumanoidRootPart")
+			if rootPart then
+				local trail = rootPart:FindFirstChild("SpeedTrail")
+				if trail then
+					trail.Color = ColorSequence.new(color)
+				end
+			end
+		end
+	end
+end)
