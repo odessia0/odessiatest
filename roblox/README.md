@@ -10,6 +10,8 @@ Follow these steps to set up the game in Roblox Studio:
 2. Right-click **ServerScriptService**, hover over **Insert Object**, and select **Script**.
 3. Name the script `SpeedManager`.
 4. Copy the content from `roblox/ServerScriptService/SpeedManager.lua` and paste it into this new script.
+5. Create another script in **ServerScriptService** and name it `WorldGenerator`.
+6. Copy the content from `roblox/ServerScriptService/WorldGenerator.lua` and paste it into the `WorldGenerator` script.
 
 ## 3. Set up the Speed UI (Local Script)
 1. In the **Explorer** window, find **StarterGui**.
