@@ -2,38 +2,63 @@
 
 local Players = game:GetService("Players")
 
-Players.PlayerAdded:Connect(function(player)
+local function setupPlayer(player)
 	-- Create leaderstats
-	local leaderstats = Instance.new("Folder")
+	local leaderstats = player:FindFirstChild("leaderstats") or Instance.new("Folder")
 	leaderstats.Name = "leaderstats"
 	leaderstats.Parent = player
 
-	local speedStat = Instance.new("IntValue")
+	local speedStat = leaderstats:FindFirstChild("Speed") or Instance.new("IntValue")
 	speedStat.Name = "Speed"
-	speedStat.Value = 1 -- Starting speed
+	if not speedStat:IsA("IntValue") then
+		speedStat:Destroy()
+		speedStat = Instance.new("IntValue")
+		speedStat.Name = "Speed"
+	end
+
+	-- Only set starting value if it's new
+	if speedStat.Value == 0 then
+		speedStat.Value = 1
+	end
 	speedStat.Parent = leaderstats
 
-	player.CharacterAdded:Connect(function(character)
+	local function onCharacterAdded(character)
 		local humanoid = character:WaitForChild("Humanoid")
 
 		-- Sync initial speed
-		humanoid.WalkSpeed = 16 + speedStat.Value -- Base speed + stat
+		humanoid.WalkSpeed = 16 + speedStat.Value
 
 		-- Update WalkSpeed when Speed stat changes
-		speedStat.Changed:Connect(function(newValue)
+		local connection
+		connection = speedStat.Changed:Connect(function(newValue)
 			if humanoid and humanoid.Parent then
 				humanoid.WalkSpeed = 16 + newValue
+			else
+				connection:Disconnect()
 			end
 		end)
 
 		-- Logic to increase speed when running
 		task.spawn(function()
-			while character.Parent do
+			while character.Parent and humanoid and humanoid.Parent do
 				if humanoid.MoveDirection.Magnitude > 0 then
 					speedStat.Value = speedStat.Value + 1
 				end
-				task.wait(1) -- Increase speed every second while moving
+				task.wait(1)
 			end
 		end)
-	end)
-end)
+	end
+
+	if player.Character then
+		onCharacterAdded(player.Character)
+	end
+	player.CharacterAdded:Connect(onCharacterAdded)
+end
+
+-- Handle players already in the server
+for _, player in ipairs(Players:GetPlayers()) do
+	task.spawn(setupPlayer, player)
+end
+
+-- Handle new players
+Players.PlayerAdded:Connect(setupPlayer)

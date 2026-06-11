@@ -13,11 +13,10 @@ Follow these steps to set up the game in Roblox Studio:
 
 ## 3. Set up the Speed UI (Local Script)
 1. In the **Explorer** window, find **StarterGui**.
-2. Right-click **StarterGui**, hover over **Insert Object**, and select **ScreenGui**.
-3. Name the ScreenGui `SpeedGui`.
-4. Right-click the new `SpeedGui`, hover over **Insert Object**, and select **LocalScript**.
-5. Name the LocalScript `SpeedUIHandler`.
-6. Copy the content from `roblox/StarterGui/SpeedUIHandler.lua` and paste it into this new LocalScript.
+2. Right-click **StarterGui**, hover over **Insert Object**, and select **LocalScript**.
+3. Name the LocalScript `SpeedUIHandler`.
+4. Copy the content from `roblox/StarterGui/SpeedUIHandler.lua` and paste it into this new LocalScript.
+*(Note: This script will automatically create a ScreenGui if it's placed directly in StarterGui, or you can place it inside a ScreenGui you've created.)*
 
 ## 4. Run the Game
 1. Click the **Play** button (or press `F5`) in Roblox Studio.
