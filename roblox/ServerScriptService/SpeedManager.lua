@@ -4,9 +4,14 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Setup RemoteEvent for trail color changes
+-- Setup RemoteEvents
 local changeTrailColorEvent = Instance.new("RemoteEvent")
 changeTrailColorEvent.Name = "ChangeTrailColor"
 changeTrailColorEvent.Parent = ReplicatedStorage
+
+local rebirthRequestEvent = Instance.new("RemoteEvent")
+rebirthRequestEvent.Name = "RebirthRequest"
+rebirthRequestEvent.Parent = ReplicatedStorage
 
 local playerTrailColors = {} -- Store preferred colors
 
@@ -16,13 +21,17 @@ local function setupPlayer(player)
 	leaderstats.Name = "leaderstats"
 	leaderstats.Parent = player
 
-	local speedStat = leaderstats:FindFirstChild("Speed") or Instance.new("IntValue")
+	local speedStat = leaderstats:FindFirstChild("Speed") or Instance.new("NumberValue")
 	speedStat.Name = "Speed"
-	if not speedStat:IsA("IntValue") then
+	if not speedStat:IsA("NumberValue") then
 		speedStat:Destroy()
-		speedStat = Instance.new("IntValue")
+		speedStat = Instance.new("NumberValue")
 		speedStat.Name = "Speed"
 	end
+
+	local rebirthsStat = leaderstats:FindFirstChild("Rebirths") or Instance.new("IntValue")
+	rebirthsStat.Name = "Rebirths"
+	rebirthsStat.Parent = leaderstats
 
 	-- Only set starting value if it's new
 	if speedStat.Value == 0 then
@@ -70,7 +79,7 @@ local function setupPlayer(player)
 		local connection
 		connection = speedStat.Changed:Connect(function(newValue)
 			if humanoid and humanoid.Parent then
-				humanoid.WalkSpeed = 16 + newValue
+				humanoid.WalkSpeed = 16 + math.floor(newValue)
 				trail.Lifetime = 0.5 + (newValue / 1000)
 			else
 				connection:Disconnect()
@@ -81,7 +90,9 @@ local function setupPlayer(player)
 		task.spawn(function()
 			while character.Parent and humanoid and humanoid.Parent do
 				if humanoid.MoveDirection.Magnitude > 0 then
-					speedStat.Value = speedStat.Value + 1
+					-- Multiplier: 1.5x per rebirth (1x base if 0 rebirths)
+					local multiplier = math.max(1, rebirthsStat.Value * 1.5)
+					speedStat.Value = speedStat.Value + multiplier
 					trail.Enabled = true
 				else
 					trail.Enabled = false
@@ -104,6 +115,27 @@ end
 
 -- Handle new players
 Players.PlayerAdded:Connect(setupPlayer)
+
+-- Handle rebirth requests
+rebirthRequestEvent.OnServerEvent:Connect(function(player)
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if not leaderstats then return end
+
+	local speedStat = leaderstats:FindFirstChild("Speed")
+	local rebirthsStat = leaderstats:FindFirstChild("Rebirths")
+	if not speedStat or not rebirthsStat then return end
+
+	local requirement = (rebirthsStat.Value + 1) * 50
+
+	if speedStat.Value >= requirement then
+		-- Apply rebirth
+		rebirthsStat.Value = rebirthsStat.Value + 1
+		speedStat.Value = 1
+
+		-- Teleport player to spawn (reset character)
+		player:LoadCharacter()
+	end
+end)
 
 -- Handle trail color change requests
 changeTrailColorEvent.OnServerEvent:Connect(function(player, color)

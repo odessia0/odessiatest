@@ -7,8 +7,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
 local changeTrailColorEvent = ReplicatedStorage:WaitForChild("ChangeTrailColor")
+local rebirthRequestEvent = ReplicatedStorage:WaitForChild("RebirthRequest")
 
--- Better waiting for leaderstats and Speed stat
+-- Better waiting for leaderstats and Stats
 local leaderstats = player:WaitForChild("leaderstats", 10)
 if not leaderstats then
 	warn("SpeedUIHandler: Timed out waiting for leaderstats")
@@ -16,8 +17,10 @@ if not leaderstats then
 end
 
 local speedStat = leaderstats:WaitForChild("Speed", 10)
-if not speedStat then
-	warn("SpeedUIHandler: Timed out waiting for Speed stat")
+local rebirthsStat = leaderstats:WaitForChild("Rebirths", 10)
+
+if not speedStat or not rebirthsStat then
+	warn("SpeedUIHandler: Timed out waiting for stats")
 	return
 end
 
@@ -58,7 +61,7 @@ textLabel.BackgroundTransparency = 1
 textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 textLabel.TextScaled = true
 textLabel.Font = Enum.Font.FredokaOne -- More "gamey" font
-textLabel.Text = "⚡ SPEED: " .. speedStat.Value
+textLabel.Text = "⚡ SPEED: " .. math.floor(speedStat.Value)
 textLabel.Parent = container
 
 local uiStroke = textLabel:FindFirstChildWhichIsA("UIStroke") or Instance.new("UIStroke")
@@ -76,17 +79,19 @@ local TRAILS = {
 	{name = "Red Rush", color = Color3.fromRGB(255, 0, 0), cost = 2500},
 }
 
--- Effect: +1 Lightning Pop-up
+-- Effect: +Lightning Pop-up
 local function createLightningPopUp()
+	local multiplier = math.max(1, rebirthsStat.Value * 1.5)
+
 	local popUp = Instance.new("TextLabel")
 	popUp.Name = "PopUp"
-	popUp.Size = UDim2.new(0, 50, 0, 50)
+	popUp.Size = UDim2.new(0, 60, 0, 60)
 	-- Randomize position near the center top
-	local randomX = 0.5 + (math.random(-10, 10) / 100)
+	local randomX = 0.5 + (math.random(-12, 12) / 100)
 	local randomY = 0.1 + (math.random(-5, 5) / 100)
 	popUp.Position = UDim2.new(randomX, 0, randomY, 0)
 	popUp.BackgroundTransparency = 1
-	popUp.Text = "+1 ⚡"
+	popUp.Text = "+" .. multiplier .. " ⚡"
 	popUp.TextColor3 = Color3.fromRGB(255, 255, 0)
 	popUp.TextScaled = true
 	popUp.Font = Enum.Font.FredokaOne
@@ -220,13 +225,102 @@ for _, data in ipairs(TRAILS) do
 	end)
 end
 
--- Toggle Market
+-- Rebirth UI
+local rebirthFrame = screenGui:FindFirstChild("RebirthFrame") or Instance.new("Frame")
+rebirthFrame.Name = "RebirthFrame"
+rebirthFrame.Size = UDim2.new(0, 300, 0, 250)
+rebirthFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+rebirthFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+rebirthFrame.BackgroundColor3 = Color3.fromRGB(85, 0, 127) -- Purple
+rebirthFrame.Visible = false
+rebirthFrame.Parent = screenGui
+
+Instance.new("UICorner", rebirthFrame).CornerRadius = UDim.new(0, 15)
+
+local rebirthTitle = Instance.new("TextLabel")
+rebirthTitle.Size = UDim2.new(1, 0, 0, 50)
+rebirthTitle.BackgroundTransparency = 1
+rebirthTitle.Text = "REBIRTH"
+rebirthTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+rebirthTitle.Font = Enum.Font.FredokaOne
+rebirthTitle.TextSize = 28
+rebirthTitle.Parent = rebirthFrame
+
+local rebirthInfo = Instance.new("TextLabel")
+rebirthInfo.Size = UDim2.new(1, -20, 0, 80)
+rebirthInfo.Position = UDim2.new(0, 10, 0, 60)
+rebirthInfo.BackgroundTransparency = 1
+rebirthInfo.Text = "Reset stats for 1.5x Multiplier!\nCost: 50 Speed"
+rebirthInfo.TextColor3 = Color3.fromRGB(255, 255, 255)
+rebirthInfo.Font = Enum.Font.FredokaOne
+rebirthInfo.TextSize = 18
+rebirthInfo.Parent = rebirthFrame
+
+local confirmRebirthBtn = Instance.new("TextButton")
+confirmRebirthBtn.Size = UDim2.new(0, 200, 0, 50)
+confirmRebirthBtn.Position = UDim2.new(0.5, -100, 0, 160)
+confirmRebirthBtn.BackgroundColor3 = Color3.fromRGB(170, 0, 255)
+confirmRebirthBtn.Text = "REBIRTH!"
+confirmRebirthBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+confirmRebirthBtn.Font = Enum.Font.FredokaOne
+confirmRebirthBtn.TextSize = 24
+confirmRebirthBtn.Parent = rebirthFrame
+Instance.new("UICorner", confirmRebirthBtn).CornerRadius = UDim.new(0, 10)
+
+local closeRebirthBtn = Instance.new("TextButton")
+closeRebirthBtn.Size = UDim2.new(0, 30, 0, 30)
+closeRebirthBtn.Position = UDim2.new(1, -35, 0, 5)
+closeRebirthBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+closeRebirthBtn.Text = "X"
+closeRebirthBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeRebirthBtn.Font = Enum.Font.FredokaOne
+closeRebirthBtn.Parent = rebirthFrame
+Instance.new("UICorner", closeRebirthBtn).CornerRadius = UDim.new(0, 5)
+
+local function updateRebirthUI()
+	local req = (rebirthsStat.Value + 1) * 50
+	local mult = (rebirthsStat.Value + 1) * 1.5
+	rebirthInfo.Text = "Reset stats for " .. mult .. "x Multiplier!\nCost: " .. req .. " Speed"
+
+	if speedStat.Value >= req then
+		confirmRebirthBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+	else
+		confirmRebirthBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+	end
+end
+
+-- Toggle Panels
 marketBtn.MouseButton1Click:Connect(function()
 	marketFrame.Visible = not marketFrame.Visible
+	rebirthFrame.Visible = false
+end)
+
+rebirthBtn.MouseButton1Click:Connect(function()
+	rebirthFrame.Visible = not rebirthFrame.Visible
+	marketFrame.Visible = false
+	if rebirthFrame.Visible then
+		updateRebirthUI()
+	end
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
 	marketFrame.Visible = false
+end)
+
+closeRebirthBtn.MouseButton1Click:Connect(function()
+	rebirthFrame.Visible = false
+end)
+
+confirmRebirthBtn.MouseButton1Click:Connect(function()
+	local req = (rebirthsStat.Value + 1) * 50
+	if speedStat.Value >= req then
+		rebirthRequestEvent:FireServer()
+		rebirthFrame.Visible = false
+	else
+		confirmRebirthBtn.Text = "NOT ENOUGH SPEED"
+		task.wait(1)
+		confirmRebirthBtn.Text = "REBIRTH!"
+	end
 end)
 
 -- Pulse effect when speed increases
@@ -245,7 +339,16 @@ end
 
 -- Update UI when speed changes
 speedStat.Changed:Connect(function(newValue)
-	textLabel.Text = "⚡ SPEED: " .. newValue
+	textLabel.Text = "⚡ SPEED: " .. math.floor(newValue)
 	pulseUI()
 	createLightningPopUp()
+	if rebirthFrame.Visible then
+		updateRebirthUI()
+	end
+end)
+
+rebirthsStat.Changed:Connect(function()
+	if rebirthFrame.Visible then
+		updateRebirthUI()
+	end
 end)
